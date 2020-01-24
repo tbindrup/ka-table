@@ -13,8 +13,14 @@ export const getRowEditableCells = (rowKeyValue: any, editableCells: Cell[]): Ce
 export const searchData = (columns: Column[], data: any[], searchText: string): any[] => {
   return columns.reduce((initialData: any[], c) => {
     const filterFunction = (item: any) => {
-      return c.search ? c.search(searchText, item, c) : initialData.indexOf(item) < 0
-        && item[getField(c)].toString().toLowerCase().includes(searchText.toLowerCase());
+      if (c.search) {
+        return c.search(searchText, item, c);
+      } else {
+        if (initialData.indexOf(item) < 0) {
+          const itemFieldValue = item[getField(c)];
+          return itemFieldValue ? itemFieldValue.toString().toLowerCase().includes(searchText.toLowerCase()) : true;
+        }
+      }
     };
     return initialData.concat(data.filter(filterFunction));
   }, []);
@@ -24,7 +30,7 @@ export const filterData = (data: any[], columns: Column[]): any[] => {
   return columns.reduce((initialData, column) => {
     if (isEmpty(column.filterRowValue)) { return initialData; }
     const filterRowOperator = column.filterRowOperator
-      || getDefaultOperatorForType(column.dataType  || defaultOptions.columnDataType);
+      || getDefaultOperatorForType(column.dataType || defaultOptions.columnDataType);
     const filterOperator = predefinedFilterOperators.find((fo) => filterRowOperator === fo.name);
     if (!filterOperator) {
       throw new Error(`'${column.filterRowOperator}' has not found in predefinedFilterOperators array, available operators: ${predefinedFilterOperators.map((o) => o.name).join(', ')}`);
@@ -70,7 +76,7 @@ export const predefinedFilterOperators: FilterOperator[] = [{
   name: FilterOperatorName.LessThanOrEqual,
 }, {
   compare: (fieldValue: any, conditionValue: any) =>
-      fieldValue.toString().toLowerCase().includes(conditionValue.toString().toLowerCase()),
+    fieldValue.toString().toLowerCase().includes(conditionValue.toString().toLowerCase()),
   defaultForTypes: [DataType.String],
   name: FilterOperatorName.Contains,
 }];
